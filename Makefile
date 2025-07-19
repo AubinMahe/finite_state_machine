@@ -10,7 +10,11 @@ CXXFLAGS         := -std=c++20 -I inc -MMD -MP
 CXXFLAGS         += -D_POSIX_C_SOURCE -D_GNU_SOURCE -D_XOPEN_SOURCE
 CXXFLAGS         += -Wall -Wextra -Wformat=2 -Wformat-security -Wstrict-overflow -Wno-unused-result
 CXXFLAGS         += -Werror $(OPTIM_OR_DEBUG) -fvisibility=hidden
-SRCS             := src/main.cpp
+SRCS             :=\
+ src/famo/entrées_sorties_via_fichier_texte.cpp\
+ src/famo/entrées_sorties_via_web_socket.cpp\
+ src/famo/four_à_micro_ondes.cpp\
+ src/main.cpp
 OBJS             := $(SRCS:%.cpp=BUILD/%.o)
 FSM              := exe/fsm
 DEPS             := $(SRCS:%=BUILD/%.d)
