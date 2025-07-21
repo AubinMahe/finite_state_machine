@@ -4,7 +4,34 @@
 #include <chrono>
 #include <iostream>
 
+namespace famo {
+
+   std::ostream & operator << ( std::ostream & stream, const state_t & state ) {
+      switch( state ) {
+         case state_t::NONE        : return stream << "NONE";
+         case state_t::ATTENDRE    : return stream << "ATTENDRE";
+         case state_t::CHAUFFER    : return stream << "CHAUFFER";
+         case state_t::HORS_D_USAGE: return stream << "HORS_D_USAGE";
+      }
+      return stream << "???";
+   }
+
+   std::ostream & operator << ( std::ostream & stream, const event_t & event ) {
+      switch( event ) {
+         case event_t::NONE                            : return stream << "NONE";
+         case event_t::PORTE_OUVERTE                   : return stream << "PORTE_OUVERTE";
+         case event_t::PORTE_FERMÉE_ET_MINUTEUR_NUL    : return stream << "PORTE_FERMÉE_ET_MINUTEUR_NUL";
+         case event_t::PORTE_FERMÉE_ET_MINUTEUR_POSITIF: return stream << "PORTE_FERMÉE_ET_MINUTEUR_POSITIF";
+         case event_t::MINUTEUR_MODIFIÉ                : return stream << "MINUTEUR_MODIFIÉ";
+         case event_t::TEMPS_ÉCOULÉ                    : return stream << "TEMPS_ÉCOULÉ";
+         case event_t::PANNE_IRRÉPARABLE               : return stream << "PANNE_IRRÉPARABLE";
+      }
+      return stream << "???";
+   }
+}
+
 using namespace famo;
+
 /**
  * Légende
  *=========
@@ -41,17 +68,20 @@ using namespace famo;
  *
  * <https://cloford.com/resources/charcodes/utf-8_box-drawing.htm>
 */
-four_à_micro_ondes::four_à_micro_ondes( entrées_sorties & es ) :
-   hpms::fsm<state_t, event_t>( state_t::ATTENDRE, {
-      {state_t::ATTENDRE, event_t::PORTE_OUVERTE                   , state_t::ATTENDRE    , [this](){ return allumer_la_lumière();  }},
-      {state_t::ATTENDRE, event_t::PORTE_FERMÉE_ET_MINUTEUR_NUL    , state_t::ATTENDRE    , [this](){ return éteindre_la_lumière(); }},
-      {state_t::ATTENDRE, event_t::PORTE_FERMÉE_ET_MINUTEUR_POSITIF, state_t::CHAUFFER    , [this](){ return allumer_la_lumière() && modifier_le_délai();  }},
-      {state_t::ATTENDRE, event_t::PANNE_IRRÉPARABLE               , state_t::HORS_D_USAGE, [this](){ return recycler();            }},
-      {state_t::CHAUFFER, event_t::MINUTEUR_MODIFIÉ                , state_t::CHAUFFER    , [this](){ return modifier_le_délai();   }},
-      {state_t::CHAUFFER, event_t::TEMPS_ÉCOULÉ                    , state_t::ATTENDRE    , [this](){ return éteindre_la_lumière(); }},
-      {state_t::CHAUFFER, event_t::PORTE_OUVERTE                   , state_t::ATTENDRE    , [this](){ return allumer_la_lumière();  }},
-      {state_t::CHAUFFER, event_t::PANNE_IRRÉPARABLE               , state_t::HORS_D_USAGE, [this](){ return recycler();            }},
-   }),
+four_à_micro_ondes::four_à_micro_ondes( entrées_sorties & es, bool verbose ) :
+   hpms::fsm<state_t, event_t>(
+      state_t::ATTENDRE, {
+         {state_t::ATTENDRE, event_t::PORTE_OUVERTE                   , state_t::ATTENDRE    , [this](){ return allumer_la_lumière();  }},
+         {state_t::ATTENDRE, event_t::PORTE_FERMÉE_ET_MINUTEUR_NUL    , state_t::ATTENDRE    , [this](){ return éteindre_la_lumière(); }},
+         {state_t::ATTENDRE, event_t::PORTE_FERMÉE_ET_MINUTEUR_POSITIF, state_t::CHAUFFER    , [this](){ return allumer_la_lumière() && modifier_le_délai();  }},
+         {state_t::ATTENDRE, event_t::PANNE_IRRÉPARABLE               , state_t::HORS_D_USAGE, [this](){ return recycler();            }},
+         {state_t::CHAUFFER, event_t::MINUTEUR_MODIFIÉ                , state_t::CHAUFFER    , [this](){ return modifier_le_délai();   }},
+         {state_t::CHAUFFER, event_t::TEMPS_ÉCOULÉ                    , state_t::ATTENDRE    , [this](){ return éteindre_la_lumière(); }},
+         {state_t::CHAUFFER, event_t::PORTE_OUVERTE                   , state_t::ATTENDRE    , [this](){ return allumer_la_lumière();  }},
+         {state_t::CHAUFFER, event_t::PANNE_IRRÉPARABLE               , state_t::HORS_D_USAGE, [this](){ return recycler();            }},
+      },
+      verbose
+   ),
    _entrées_sorties( es )
 {
    set_activity( state_t::CHAUFFER, [this](){ chauffer(); });
@@ -81,20 +111,12 @@ void four_à_micro_ondes::elaborate_and_send_events( void ) {
    }
 }
 
-static const char * nom_symbolique_de( const state_t & state ) {
-   switch( state ) {
-      case state_t::NONE        : return "NONE";
-      case state_t::ATTENDRE    : return "ATTENDRE";
-      case state_t::CHAUFFER    : return "CHAUFFER";
-      case state_t::HORS_D_USAGE: return "HORS_D_USAGE";
-   }
-   return "???";
-}
-
 void four_à_micro_ondes::publish_actuators_commands( void ) {
    const std::lock_guard<std::mutex> lock( _mutex );
+   std::stringstream ss;
+   ss << get_current_state();
    _entrées_sorties.publier(
-      nom_symbolique_de( get_current_state()),
+      ss.str(),
       _lumière_allumée,
       _porte_ouverte,
       _minuteur_ms,
@@ -132,9 +154,6 @@ void four_à_micro_ondes::chauffer( void ) {
       std::this_thread::sleep_for( 20ms );
       const std::lock_guard<std::mutex> lock( _mutex );
       if( _minuteur_ms != _consigne_minuteur_ms ) {
-         // const auto now = std::chrono::system_clock::now();
-         // const std::time_t t_c = std::chrono::system_clock::to_time_t( now );
-         // std::cout << std::ctime(&t_c) << " - MINUTEUR_MODIFIÉ\n";
          event( event_t::MINUTEUR_MODIFIÉ );
       }
       _minuteur_ms -= 20;
@@ -143,8 +162,5 @@ void four_à_micro_ondes::chauffer( void ) {
    }
    if( _minuteur_ms <= 0L ) {
       event( event_t::TEMPS_ÉCOULÉ );
-      // const auto now = std::chrono::system_clock::now();
-      // const std::time_t t_c = std::chrono::system_clock::to_time_t( now );
-      // std::cout << std::ctime(&t_c) << " - TEMPS_ÉCOULÉ\n";
    }
 }

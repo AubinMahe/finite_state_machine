@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset='utf-8'>
+   <title>Finite State Machine I/O via WebSocket</title>
+   <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+</head>
+<body>
+   <label for="state">État de l'automate : </label>
+   <input id ="state" type="text" size="20" />
+   <br />
+   <label for="porte">La porte est ouverte : </label>
+   <input id ="porte" type="checkbox" />
+   <br />
+   <label for="lumière">La lumière est allumée : </label>
+   <input id ="lumière" type="checkbox" disabled="true" />
+   <br />
+   <label for="minuteur">Minuteur : </label>
+   <input id ="minuteur" type="number" min="0" max="120" value="0" /> secondes
+   <br />
+   <button id ="panne">Déclarer le four en panne irréparable</button>
+   <script src='main.js'></script>
+</body>
+</html>

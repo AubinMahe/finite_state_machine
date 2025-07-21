@@ -9,6 +9,7 @@ namespace famo {
       CHAUFFER, // Rotation du plateau, émission des micro-ondes, décompte du temps
       HORS_D_USAGE,
    };
+   std::ostream & operator << ( std::ostream & stream, const state_t & state );
 
    enum class event_t {
       NONE = 0,
@@ -19,13 +20,14 @@ namespace famo {
       TEMPS_ÉCOULÉ,
       PANNE_IRRÉPARABLE
    };
+   std::ostream & operator << ( std::ostream & stream, const event_t & event );
 
    class four_à_micro_ondes :
       public hpms::fsm<state_t, event_t>
    {
    public:
 
-      four_à_micro_ondes( famo::entrées_sorties & intrfc );
+      four_à_micro_ondes( famo::entrées_sorties & intrfc, bool verbose = false );
 
    protected:// Les entrées, événements et sorties
 

@@ -1,4 +1,5 @@
 CXX              := g++
+CC               := gcc
 #OPTIM_OR_DEBUG   := -O3 -g0
 OPTIM_OR_DEBUG   := -O0 -g3 -ggdb -DDEBUG
 ifneq (,$(findstring -ggdb,$(OPTIM_OR_DEBUG)))
@@ -6,18 +7,23 @@ STRIP            := @echo "Debug mode, don't strip"
 else
 STRIP            := strip
 endif
-CXXFLAGS         := -std=c++20 -I inc -MMD -MP
-CXXFLAGS         += -D_POSIX_C_SOURCE -D_GNU_SOURCE -D_XOPEN_SOURCE
-CXXFLAGS         += -Wall -Wextra -Wformat=2 -Wformat-security -Wstrict-overflow -Wno-unused-result
-CXXFLAGS         += -Werror $(OPTIM_OR_DEBUG) -fvisibility=hidden
-SRCS             :=\
+COMMON_FLAGS     := -I inc -I src/famo -MMD -MP
+COMMON_FLAGS     += -D_POSIX_C_SOURCE -D_GNU_SOURCE -D_XOPEN_SOURCE
+CXXFLAGS         := $(COMMON_FLAGS) -std=c++20
+CXXFLAGS         += -Wall -Wextra -Wformat=2 -Wformat-security -Wstrict-overflow -Wno-unused-result -fstack-protector-all -Werror
+CXXFLAGS         += $(OPTIM_OR_DEBUG) -fvisibility=hidden
+CFLAGS           := $(COMMON_FLAGS) -std=c2x
+CFLAGS           += -Wall -Wextra
+LDFLAGS          := -L/usr/lib/x86_64-linux-gnu -lwebsockets
+CPP_SRCS         :=\
  src/famo/entrées_sorties_via_fichier_texte.cpp\
  src/famo/entrées_sorties_via_web_socket.cpp\
  src/famo/four_à_micro_ondes.cpp\
+ src/famo/websocket_and_http_servers.cpp\
  src/main.cpp
-OBJS             := $(SRCS:%.cpp=BUILD/%.o)
+OBJS             := $(C_SRCS:%.c=BUILD/%.o) $(CPP_SRCS:%.cpp=BUILD/%.o)
+DEPS             := $(C_SRCS:%=BUILD/%.d)   $(CPP_SRCS:%=BUILD/%.d)
 FSM              := exe/fsm
-DEPS             := $(SRCS:%=BUILD/%.d)
 VALGRIND_OPTIONS :=\
  valgrind\
  --leak-check=full\
@@ -65,10 +71,18 @@ run-efence: $(FSM)
 	@xed $(INTERFACE_IN_PATH) &
 	$(EFENCE_OPTIONS) $(FSM)
 
+run-ws: $(FSM)
+	@(sleep 2 && brave-browser-stable http://localhost:2416)&
+	$(FSM) -v -w 2416
+
+run-ws-memcheck: $(FSM)
+	@(sleep 2 && brave-browser-stable http://localhost:2416)&
+	$(VALGRIND_OPTIONS) $(FSM) -w 2416
+
 doc:
 	@rm -fr doc doxygen-*.txt
 	@mkdir doc
-	LD_LIBRARY_PATH=/applis/Doxygen_Suite_100/lib doxygen > doxygen-out.txt 2>doxygen-err.txt
+	doxygen > doxygen-out.txt 2>doxygen-err.txt
 
 $(FSM): $(OBJS)
 	@mkdir -p $$(dirname $@)
@@ -77,6 +91,10 @@ $(FSM): $(OBJS)
 
 BUILD/%.o: %.cpp
 	@mkdir -p $$(dirname $@)
-	$(CXX) -c $(CXXFLAGS) -Wstrict-overflow -fpic -fstack-protector-all -MF BUILD/$<.d $< -o $@ -DBUILD_LIB
+	$(CXX) -c $(CXXFLAGS) -MF BUILD/$<.d $< -o $@
+
+BUILD/%.o: %.c
+	@mkdir -p $$(dirname $@)
+	$(CC)  -c $(CFLAGS)   -MF BUILD/$<.d $< -o $@
 
 -include $(DEPS)

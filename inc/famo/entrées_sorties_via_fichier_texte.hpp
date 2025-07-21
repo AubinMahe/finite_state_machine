@@ -19,7 +19,7 @@ namespace famo {
    // Sorties
    public:
 
-      virtual void publier(
+      virtual bool publier(
          const std::string & le_nom_logique_de_l_état_de_l_automate,
          bool la_lumière_est_allumée,
          bool la_porte_est_ouverte,

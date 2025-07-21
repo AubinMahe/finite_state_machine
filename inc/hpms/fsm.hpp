@@ -1,7 +1,7 @@
 #pragma once
 #include <chrono>
 #include <functional>
-// #include <iostream>
+#include <iostream>
 #include <map>
 #include <thread>
 #include <tuple>
@@ -16,7 +16,8 @@ namespace hpms {
       typedef std::function<bool(void)> action_t;
       typedef std::function<void(void)> activity_t;
 
-      fsm( S initial, const std::initializer_list<std::tuple<S,E,S,action_t>> & transitions ) :
+      fsm( S initial, const std::initializer_list<std::tuple<S,E,S,action_t>> & transitions, bool verbose = false ) :
+         _verbose( verbose ),
          _current( initial )
       {
          for( auto t : transitions ) {
@@ -80,6 +81,14 @@ namespace hpms {
             S prev = _current;
             _current = iter->second.first;
             if( _current != prev ) {
+               if( _verbose ) {
+                  const auto now = std::chrono::system_clock::now();
+                  const std::time_t t_c = std::chrono::system_clock::to_time_t( now );
+                  std::cerr
+                     << std::ctime( &t_c )
+                     << prev << " + " << event << " ==> "      << _current
+                     << std::endl;
+               }
                auto iter2 = _activities.find( _current );
                if( iter2 != _activities.end()) {
                   // const auto now = std::chrono::system_clock::now();
@@ -102,6 +111,7 @@ namespace hpms {
          std::pair<S,E>,
          std::pair<S,action_t>> _transitions;
       std::map<S,activity_t>    _activities;
+      const bool                _verbose;
       bool                      _dead = false;
       S                         _current;
    };

@@ -1,0 +1,50 @@
+:root {
+   --text-color: rgba(245, 245, 245, 0.705);
+   --background-color: #121212;
+   --background-color-lighted: #515151;
+}
+* { 
+   margin     : 0;
+   padding    : 0;
+   box-sizing : border-box;
+   line-height: normal;
+}
+body {
+   background-color: var(--background-color);
+   color           : var(--text-color);
+   min-width       : 900px;
+   height          : 100vh;
+   overflow        : hidden;
+   font-family     : Verdana;
+   font-size       : 14pt;
+   margin-top      : 20px;
+   margin-left     : 20px;
+}
+input {
+   background-color: var(--background-color);
+   color           : var(--text-color);
+   margin          : 4px;
+   border-radius   : 4px;
+   font-family     : Verdana;
+   font-size       : 14pt;
+}
+input[type=number] {
+   width: 4em;
+}
+button {
+   margin          : 2px;
+   padding         : 10px 20px;
+   font-family     : Verdana;
+   font-size       : 14pt;
+   background-color: var(--background-color);
+   color           : var(--text-color);
+   border          : 2px solid white;
+   border-radius   : 4px;
+   cursor          : pointer;
+}
+button:hover {
+   background-color: var(--background-color-lighted);
+}
+button:active {
+   transform: scale(0.98);
+}

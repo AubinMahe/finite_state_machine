@@ -43,7 +43,7 @@ entrées_sorties_via_fichier_texte::entrées_sorties_via_fichier_texte( const ch
    return true;
 }
 
-void entrées_sorties_via_fichier_texte::publier(
+bool entrées_sorties_via_fichier_texte::publier(
    const std::string & le_nom_logique_de_l_état_de_l_automate,
    bool la_lumière_est_allumée,
    bool la_porte_est_ouverte,
@@ -65,4 +65,5 @@ void entrées_sorties_via_fichier_texte::publier(
       //    << "Écriture de '" << _out_path << "'" << std::endl
       //    << states;
    }
+   return true;
 }

@@ -5,11 +5,38 @@
    "version": "0.2.0",
    "configurations": [
       {
-         "name": "(gdb) Lancer",
+         "name": "(gdb) fsm fichier ui",
          "type": "cppdbg",
          "request": "launch",
          "program": "${workspaceFolder}/exe/fsm",
          "args": [],
+         "stopAtEntry": false,
+         "cwd": "${fileDirname}",
+         "environment": [],
+         "externalConsole": false,
+         "MIMode": "gdb",
+         "setupCommands": [
+             {
+                 "description": "Activer l'impression en mode Pretty pour gdb",
+                 "text": "-enable-pretty-printing",
+                 "ignoreFailures": true
+             },
+             {
+                 "description": "Définir la version désassemblage sur Intel",
+                 "text": "-gdb-set disassembly-flavor intel",
+                 "ignoreFailures": true
+             }
+         ]
+      },
+      {
+         "name": "(gdb) fsm websocket ui",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/exe/fsm",
+         "args": [
+            "-w",
+            "2416"
+         ],
          "stopAtEntry": false,
          "cwd": "${fileDirname}",
          "environment": [],
